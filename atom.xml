@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <id>https://blakeyzhang.github.io</id>
+    <title>Tubor</title>
+    <updated>2023-11-28T07:23:37.006Z</updated>
+    <generator>https://github.com/jpmonette/feed</generator>
+    <link rel="alternate" href="https://blakeyzhang.github.io"/>
+    <link rel="self" href="https://blakeyzhang.github.io/atom.xml"/>
+    <subtitle>学而时习之</subtitle>
+    <logo>https://blakeyzhang.github.io/images/avatar.png</logo>
+    <icon>https://blakeyzhang.github.io/favicon.ico</icon>
+    <rights>All rights reserved 2023, Tubor</rights>
+    <entry>
+        <title type="html"><![CDATA[rust所有权]]></title>
+        <id>https://blakeyzhang.github.io/rust-suo-you-quan/</id>
+        <link href="https://blakeyzhang.github.io/rust-suo-you-quan/">
+        </link>
+        <updated>2023-11-16T08:59:40.000Z</updated>
+    </entry>
+</feed>

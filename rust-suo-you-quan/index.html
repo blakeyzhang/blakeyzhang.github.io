@@ -1,0 +1,426 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>rust所有权 | Tubor</title>
+<link rel="shortcut icon" href="https://blakeyzhang.github.io/favicon.ico?v=1701156206016">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://blakeyzhang.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="rust所有权 | Tubor - Atom Feed" href="https://blakeyzhang.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="所有权
+什么是所有权？
+编程语言对于内存的分配方式，常见的有两种：
+
+通过GC的方式回收内存；
+程序员手动分配和释放内存。
+
+Rust使用的是独特的方式：**使用包含特定规则的所有权系统来管理内存。**该规则运行编译器在编译过程汇总执行检查..." />
+    <meta name="keywords" content="rust" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://blakeyzhang.github.io">
+  <img class="avatar" src="https://blakeyzhang.github.io/images/avatar.png?v=1701156206016" alt="">
+  </a>
+  <h1 class="site-title">
+    Tubor
+  </h1>
+  <p class="site-description">
+    学而时习之
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              rust所有权
+            </h2>
+            <div class="post-info">
+              <span>
+                2023-11-16
+              </span>
+              <span>
+                11 min read
+              </span>
+              
+                <a href="https://blakeyzhang.github.io/rust/" class="post-tag">
+                  # rust
+                </a>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content" v-pre>
+                <p>所有权</p>
+<h2 id="什么是所有权">什么是所有权？</h2>
+<p>编程语言对于内存的分配方式，常见的有两种：</p>
+<ul>
+<li>通过GC的方式回收内存；</li>
+<li>程序员手动分配和释放内存。</li>
+</ul>
+<p>Rust使用的是独特的方式：**使用包含特定规则的所有权系统来管理内存。**该规则运行编译器在编译过程汇总执行检查工作</p>
+<h3 id="所有权规则">所有权规则</h3>
+<p>规则：</p>
+<ul>
+<li>Rust中的每一个值都有一个对应的变量作为它的所有者；</li>
+<li>在同一时间内，值有且仅有一个所有者；</li>
+<li>当所有者离开自己的作用域时，它持有的值就会被释放掉。</li>
+</ul>
+<h3 id="变量作用域">变量作用域</h3>
+<p>作用域是一个对象在程序中有效的范围。如下：</p>
+<pre><code class="language-rust">{
+    let s = &quot;Hello&quot;;
+}
+</code></pre>
+<p>上述代码中的变量<code>s</code>，有两个重点：</p>
+<ol>
+<li>s在进入作用域后变得有效；</li>
+<li>有效性保持到s离开作用域为止。</li>
+</ol>
+<h3 id="string类型">String类型</h3>
+<p>使用String类型的原因是，需要使用一个将数据存储在堆上的类型，以便于研究Rust如何自动回收这些数据。</p>
+<p>如下代码：</p>
+<pre><code class="language-rust">fn main() {
+    let mut s = String::from(&quot;hello&quot;);
+    s.push_str(&quot;, world!&quot;);
+    
+    println!(&quot;{}&quot;, s);
+}
+</code></pre>
+<p>这里，String是可变的，字符串字面量是不可变的。原因是，它们的内存处理方式不同。</p>
+<p>对于字符串字面量而言，由于在编译期就知道其内容，所以这部分硬编码的文本被直接嵌入到最终的可执行文件。</p>
+<p>对于String而言，为了支持一个可变的、可增长的文本类型，我们需要在堆上分配一块在编译时未知大小的内存来存放数据。</p>
+<p>这里意味着：</p>
+<ol>
+<li>我们使用的内存是由操作系统在运行时动态分配出来的；</li>
+<li>当使用完String时，我们需要通过某种方式来将这些内存归还给操作系统。</li>
+</ol>
+<p>其中第一步中，调用<code>String::from</code>时，这个函数会请求自己需要的内存空间，即：程序员来发起堆内存的分配请求；</p>
+<p>在第二步中，不同的编程语言实现起来存在区别，对于存在GC的语言中，GC会代替程序员来负责记录并清除不在使用的内存；</p>
+<p>对于不存在GC的语言，内存的释放需要程序员完成。</p>
+<p>在Rust中，堆内存的释放是：<strong>内存会自动地在拥有它的变量离开作用域后进行释放。</strong></p>
+<p>对于Rust代码，合适的回收内存的地方就是在<code>}</code>位置，Rust在变量离开作用域时，会调用一个叫作<code>drop</code>的特殊函数。</p>
+<h3 id="堆内存和栈内存">堆内存和栈内存</h3>
+<p>如下代码示例：</p>
+<pre><code class="language-rust">let x = 5;
+let y = x;
+</code></pre>
+<p>上述代码中，整数5绑定在变量x上；然后创建一个x值的拷贝，将其绑定在y上。上述过程中，两个值5都会被同时推入到当前的栈中。</p>
+<pre><code class="language-rust">let s1 = String::form(&quot;hello&quot;);
+let s2 = s1;
+</code></pre>
+<p>对于<code>String</code>声明的变量，其过程与上述描述存在差异。</p>
+<p><code>String</code>的内存布局如下所示：</p>
+<figure data-type="image" tabindex="1"><img src="https://image-1253699565.cos.ap-chengdu.myqcloud.com/img/image-20231103153410425.png" alt="image-20231103153410425" loading="lazy"></figure>
+<p>它由三部分组成：1、一个指向存放字符串内容的指针(ptr)；2、一个长度(len)；3、一个容量(capacity)。</p>
+<p>这三部分存放在栈中。</p>
+<p>实际的字符串存储在堆上。</p>
+<p>在<code>let s2 = s1;</code>语句中，并不会拷贝一个字符串副本，只是复制了<code>String</code>数据，即复制了<em>指针、长度、容量</em>字段。</p>
+<p>也就是说，现在的内存布局如下：</p>
+<figure data-type="image" tabindex="2"><img src="https://image-1253699565.cos.ap-chengdu.myqcloud.com/img/image-20231103154039215.png" alt="image-20231103154039215" loading="lazy"></figure>
+<p>这种内存布局与前面提到的drop函数之间会产生一个问题：当s2和s1离开各自的作用域时，会尝试释放相同的堆内存，即二次释放的异常。</p>
+<p>为了避免这种问题，Rust在这种场景下，会将s1废弃，即不再将其视为一个有效的标量，那么在s1离开作用域的时候，Rust不会调用drop函数清理任何内存。这里需要注意的是：在s2创建完成后，再使用s1会导致编译错误。</p>
+<p>区别与其他编程语言的深浅拷贝机制，由于Rust将第一个变量置为无效，因此称其为**移动(move)**操作，即将上述行为称为：s1被移动到了s2中。</p>
+<p>上述过程可以得知，Rust中不会自动创建数据的深拷贝，如果需要使用深拷贝，则考虑通过克隆的方式。</p>
+<h4 id="克隆">克隆</h4>
+<p>当明确需要深度拷贝堆上的数据时，可以使用一个<code>clone</code>的方法。如下：</p>
+<pre><code class="language-rust">let s1 = String::from(&quot;hello&quot;);
+let s2 = sl.clone();
+</code></pre>
+<p>回过头来在看整型的上的操作：</p>
+<pre><code class="language-rust">let x = 5;
+let y = x;
+</code></pre>
+<p>上述操作中，类似于整型数据是存放在栈上的，Rust提供了一个Copy的trait，他可以用于整型这种完全存储在栈上的数据类型。</p>
+<p>**一旦某种类型拥有了Copy这种trait，那么它的变量就可以在赋值给其他变量之后保持可用性。**也就是说，不同于<code>String</code>类型的数据，上述代码中的<code>let y = x;</code>声明之后，原来的<code>x</code>变量还是可以使用的。</p>
+<p>需要注意的是，<strong>如果一种类型本身或者其成员实现了<code>Drop</code>这种trait，那么Rust就不允许其实现<code>Copy</code>这种trait。</strong></p>
+<h3 id="所有权与函数">所有权与函数</h3>
+<p>将值传递给函数在语义上类似于对变量进行赋值，将变量传递给函数将触发移动或复制。</p>
+<pre><code class="language-rust">fn main() {
+    let s = String::from(&quot;hello&quot;);              // 变量s进入作用域
+
+    takes_ownership(s);                  		// s的值被移动进入函数
+
+    let x = 5;                                  // 变量x进入作用域
+
+    makes_copy(x);                     		    // 变量x被传递给函数，但是由于i32是Copy,这之后仍然可以使用x
+
+    println!(&quot;can use: {}&quot;, x);
+}                                               // x首先离开作用域，随后是s
+
+fn takes_ownership(some_string: String) {       // some_string进入作用域
+    println!(&quot;{}&quot;, some_string);
+} // some_string离开作用域，drop函数被自动调用，some_string占用的内存被释放
+
+fn makes_copy(some_integer: i32) {
+    println!(&quot;{}&quot;, some_integer);
+} // some_integer在这里离开了作用域，没有什么特别的事情发生
+
+</code></pre>
+<h3 id="返回值与作用域">返回值与作用域</h3>
+<p>函数在返回值的过程中也会发生所有权的转移，如下示例：</p>
+<pre><code class="language-rust">fn main() {
+    let s1 = gives_ownership();				// gives_ownership将它的返回值移动至s1中
+
+    let s2 = String::from(&quot;hello&quot;);			// s2进入作用域
+
+    let s3 = takes_and_gives_back(s2);		// s2被移动进函数takes_and_gives_back中，而这个函数的返回值又被移动到变量s3上
+}  // s3在这里离开作用域并被销毁，由于s2已经移动了，所以它不会在离开作用域时发生任何事情。s1最后离开作用域并被销毁
+
+fn gives_ownership() -&gt; String {
+    let some_string = String::from(&quot;hello&quot;);
+
+    some_string
+}
+
+fn takes_and_gives_back(a_string: String) -&gt; String {
+    a_string
+}
+</code></pre>
+<p>变量所有权的转移模式是：<strong>将一个值赋值给另一个变量时就会转移所有权。</strong></p>
+<p>也就是说，当一个持有堆数据的变量离开作用域时，它的数据就会被drop清理回收，除非这些数据的所有权转移到另一个变量上。</p>
+<p>这样导致的问题就是，如果一个函数的入参需要保留所有权，那么就需要将其作为结果返回，另外函数还有其他的返回值，这样就显得比较烦琐。</p>
+<p>虽然可以通过元组的方式同时返回多个值，如下：</p>
+<pre><code class="language-rust">fn main() { 
+    let s1 = String::from(&quot;hello&quot;); 
+ 
+    let (s2, len) = calculate_length(s1); 
+ 
+    println!(&quot;The length of '{}' is {}.&quot;, s2, len); 
+} 
+ 
+fn calculate_length(s: String) -&gt; (String, usize) { 
+    let length = s.len(); // len()会返回当前字符串的长度 
+ 
+    (s, length) 
+} 
+</code></pre>
+<p>但是这种实现并不优雅，对此，Rust提供了一个名为引用的功能。</p>
+<h2 id="引用与借用">引用与借用</h2>
+<p>对于一个函数而言，调用该函数会导致其入参移动到函数体内部，假如需要在函数调用完毕之后，继续使用该入参，前面给出的方案是将入参作为元素再次返回。</p>
+<p>实际上，Rust提供了引用的功能，函数签名使用引用作为参数，就可以在不转移所有权的前提下使用该参数：</p>
+<pre><code class="language-rust">fn main() { 
+    let s1 = String::from(&quot;hello&quot;); 
+ 
+    let len = calculate_length(&amp;s1); 
+ 
+    println!(&quot;The length of '{}' is {}.&quot;, s1, len); 
+} 
+ 
+fn calculate_length(s: &amp;String) -&gt; usize { 
+    s.len() 
+} 
+</code></pre>
+<p>上述代码中，函数<code>calculate_length</code>的入参是<code>&amp;String</code>类型。这里<code>&amp;</code>代表的就是<strong>引用</strong>语义，即<strong>允许在不获取所有权的前提下使用值。</strong></p>
+<p>下图是这个过程的图解示意：</p>
+<figure data-type="image" tabindex="3"><img src="https://image-1253699565.cos.ap-chengdu.myqcloud.com/img/image-20231128143056580.png" alt="image-20231128143056580" loading="lazy"></figure>
+<p>引用与变量的区别在于，引用不会在离开自己的作用域时销毁其指向的数据，因为它并不拥有该数据的所有权。</p>
+<p>通过引用传递参数给函数的方法也被称为借用（borrowing）。</p>
+<p>如果对于借用的值尝试进行修改则会出现异常，如下：</p>
+<pre><code class="language-rust">fn main() { 
+    let s = String::from(&quot;hello&quot;); 
+ 
+    change(&amp;s); 
+} 
+ 
+fn change(some_string: &amp;String) { 
+    some_string.push_str(&quot;, world&quot;); 
+} 
+</code></pre>
+<p>异常如下：</p>
+<pre><code class="language-bash">error[E0596]: cannot borrow immutable borrowed content
+`*some_string` as mutable
+ --&gt; error.rs:8:5
+  |
+7 | fn change(some_string: &amp;String) {
+  |                        ------- use `&amp;mut String` here to make mutable
+8 |     some_string.push_str(&quot;, world&quot;);
+  |     ^^^^^^^^^^^ cannot borrow as mutable
+</code></pre>
+<p>也就是说，引用与变量类似，默认是不可变的，Rust不允许修改引用指向的值。</p>
+<h3 id="可变引用">可变引用</h3>
+<p>对于需要修改的变量，可以将其声明为可变的，然后使用<code>&amp;mut s</code>的方式给函数传递一个可变引用，这样一来，就可以修改引用的值。</p>
+<p>需要注意的是：<strong>对于特定作用域中的特定数据而言，一次只能声明一个可变引用。</strong></p>
+<p>如下代码：</p>
+<pre><code class="language-rust">let mut s = String::from(&quot;hello&quot;); 
+ 
+let r1 = &amp;mut s; 
+let r2 = &amp;mut s; 
+</code></pre>
+<p>尝试编译则会抛出异常：</p>
+<pre><code class="language-bash">error[E0499]: cannot borrow `s` as mutable more than once at a time
+ --&gt; borrow_twice.rs:5:19
+  |
+4 |     let r1 = &amp;mut s;
+  |                   - first mutable borrow occurs here
+5 |     let r2 = &amp;mut s;
+  |                   ^ second mutable borrow occurs here
+6 | }
+  | - first borrow ends here
+</code></pre>
+<p>这样设计的目的是，在编译时避免数据竞争。数据竞争与竞态条件比较类似，即：</p>
+<ul>
+<li>两个或两个以上的指针同时访问同一空间；</li>
+<li>其中至少有一个指针会向空间中写入数据；</li>
+<li>没有同步数据访问的机制。</li>
+</ul>
+<p>对于前面提到的&quot;同一作用域中特定数据不能多次声明可变引用&quot;的问题，如果需要处理，可以通过创建一个新的作用域范围来实现：</p>
+<pre><code class="language-rust">let mut s = String::from(&quot;hello&quot;);
+
+{
+    let r1 = &amp;mut s;
+        
+} // 由于 r1 在这里离开了作用域，所以我们可以合法地再创建一个可变引用。
+
+let r2 = &amp;mut s;
+</code></pre>
+<p>另外，在结合使用可变引用和不可变引用时，需要注意的是：<strong>不能在拥有不可变引用的同时创建可变引用。</strong></p>
+<p>对此很好理解，不可变引用的用户必然不希望他们使用的值发生变化。</p>
+<h3 id="悬垂引用">悬垂引用</h3>
+<p>悬垂引用引申自悬垂指针，这类指针指向曾经存在的某些内存地址，但是该部分内存已经被释放或重新分配了。</p>
+<p>在Rust中，编译器会确保不会出现悬垂状态。</p>
+<h3 id="引用的规则">引用的规则</h3>
+<ul>
+<li>在任何一段给定的时间里，要么只能拥有一个可变引用，要么拥有任意数量的不可变引用；</li>
+<li>引用总是有效的。</li>
+</ul>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li><a href="#%E4%BB%80%E4%B9%88%E6%98%AF%E6%89%80%E6%9C%89%E6%9D%83">什么是所有权？</a>
+<ul>
+<li><a href="#%E6%89%80%E6%9C%89%E6%9D%83%E8%A7%84%E5%88%99">所有权规则</a></li>
+<li><a href="#%E5%8F%98%E9%87%8F%E4%BD%9C%E7%94%A8%E5%9F%9F">变量作用域</a></li>
+<li><a href="#string%E7%B1%BB%E5%9E%8B">String类型</a></li>
+<li><a href="#%E5%A0%86%E5%86%85%E5%AD%98%E5%92%8C%E6%A0%88%E5%86%85%E5%AD%98">堆内存和栈内存</a>
+<ul>
+<li><a href="#%E5%85%8B%E9%9A%86">克隆</a></li>
+</ul>
+</li>
+<li><a href="#%E6%89%80%E6%9C%89%E6%9D%83%E4%B8%8E%E5%87%BD%E6%95%B0">所有权与函数</a></li>
+<li><a href="#%E8%BF%94%E5%9B%9E%E5%80%BC%E4%B8%8E%E4%BD%9C%E7%94%A8%E5%9F%9F">返回值与作用域</a></li>
+</ul>
+</li>
+<li><a href="#%E5%BC%95%E7%94%A8%E4%B8%8E%E5%80%9F%E7%94%A8">引用与借用</a>
+<ul>
+<li><a href="#%E5%8F%AF%E5%8F%98%E5%BC%95%E7%94%A8">可变引用</a></li>
+<li><a href="#%E6%82%AC%E5%9E%82%E5%BC%95%E7%94%A8">悬垂引用</a></li>
+<li><a href="#%E5%BC%95%E7%94%A8%E7%9A%84%E8%A7%84%E5%88%99">引用的规则</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://blakeyzhang.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>
